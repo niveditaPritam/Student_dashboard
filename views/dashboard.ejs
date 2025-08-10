@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Dashboard</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  
+  <style>
+    .chatbot-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .chatbot-controls {
+      display: flex;
+      gap: 15px;
+    }
+
+    .chatbot-controls i, .chatbot-controls select {
+      cursor: pointer;
+      padding: 5px;
+      border-radius: 5px;
+      transition: background-color 0.3s;
+    }
+
+    .chatbot-controls i:hover {
+      background-color: #f0f0f0;
+    }
+
+    .chat-input {
+      display: flex;
+      align-items: center;
+    }
+
+    .chat-input #voiceBtn {
+      background: none;
+      border: none;
+      font-size: 1.2rem;
+      cursor: pointer;
+      margin-left: 10px;
+      color: #5b21b6;
+    }
+    .chat-input #voiceBtn.is-listening {
+        color: #d93c3c;
+    }
+
+    /* Fullscreen overlay style */
+    .chatbot.fullscreen {
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 80vw;
+      height: 90vh;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+    }
+    .chatbot.fullscreen #responseBox {
+        flex-grow: 1;
+        overflow-y: auto;
+    }
+  </style>
+  </head>
+<body>
+
+  <nav class="navbar">
+    <div class="navbar-container">
+      <a href="/dashboard" class="navbar-logo">
+        <i class="fas fa-book-open"></i> EduHub
+      </a>
+    
+  <ul class="nav-menu">
+        <li class="nav-item">
+          <a href="/logout" class="nav-links">
+            <i class="fas fa-sign-out-alt"></i> Logout
+          </a>
+        </li>
+      </ul>
+    </div>
+  </nav>
+
+  <div class="dashboard-container">
+    <div class="dashboard-header">
+      <h2>Welcome to Your Study Dashboard</h2>
+      <p>Select 
+a subject to view materials or ask our AI for help.</p>
+    </div>
+
+    <div class="content-grid">
+      <div class="box study-materials">
+        <h3><i class="fas fa-folder"></i> Study Materials</h3>
+        <label for="subjectSelect">Select Subject:</label>
+        <select id="subjectSelect" onchange="loadSubject(this.value)">
+          <% subjects.forEach(sub => { %>
+            <option value="<%= sub.id %>"><%= sub.title 
+%></option>
+          <% }) %>
+        </select>
+
+        <div id="materialBox">
+          <% subjects.forEach(sub => { %>
+            <div class="subject-material" id="subject-<%= sub.id %>" style="display: none;">
+              <a href="<%= sub.notes_url %>" class="material-link" target="_blank"><i class="fas fa-file-alt"></i> View Notes</a>
+              <a href="<%= 
+sub.video_url %>" class="material-link" target="_blank"><i class="fas fa-video"></i> Watch Video</a>
+            </div>
+          <% }) %>
+        </div>
+      </div>
+
+      <div class="box chatbot" id="chatbot-box">
+        <div class="chatbot-header">
+          <h3><i class="fas fa-robot"></i> Gemini AI Chatbot</h3>
+          <div class="chatbot-controls">
+            <select id="languageSelect" title="Select language">
+                <option value="English">English</option>
+                <option value="Spanish">Spanish</option>
+                <option value="French">French</option>
+                <option value="German">German</option>
+                <option value="Hindi">Hindi</option>
+            </select>
+            <i class="fas fa-expand" id="resizeBtn" title="Toggle fullscreen"></i>
+          </div>
+        </div>
+        <div id="responseBox">
+            <p>Ask me anything about 
+your subjects!</p>
+        </div>
+        <div class="chat-input">
+            <textarea id="userQ" placeholder="Type your question or use the mic..." rows="2"></textarea>
+            <button id="voiceBtn" title="Ask with voice"><i class="fas fa-microphone"></i></button>
+            <button onclick="askDoubt()"><i class="fas fa-paper-plane"></i></button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Function to display materials for the selected subject
+    function loadSubject(id) {
+      document.querySelectorAll('.subject-material').forEach(div => div.style.display = 
+'none');
+      const target = document.getElementById('subject-' + id);
+      if (target) {
+        target.style.display = 'flex';
+// Use flex for better alignment
+      }
+    }
+
+    // Load the first subject's materials by default when the page loads
+    window.onload = () => {
+      const firstSubject = document.querySelector('#subjectSelect').value;
+if (firstSubject) {
+        loadSubject(firstSubject);
+      }
+    };
+    
+    // START: New function to toggle chatbot size
+    document.getElementById('resizeBtn').addEventListener('click', () => {
+        document.getElementById('chatbot-box').classList.toggle('fullscreen');
+    });
+    // END: New function to toggle chatbot size
+
+// Function to handle the chatbot API call
+    async function askDoubt() {
+      const question = document.getElementById("userQ").value;
+const responseBox = document.getElementById("responseBox");
+      const language = document.getElementById("languageSelect").value; // Get selected language
+
+      if (!question.trim()) {
+        responseBox.innerHTML = "<p class='error'>Please enter a question.</p>";
+return;
+      }
+      
+      // Clear the input and show loading message
+      document.getElementById("userQ").value = "";
+responseBox.innerHTML = "<p class='loading'>Thinking...</p>";
+
+      try {
+        const res = await fetch("/ask", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ question, language }) // Send question and language
+        });
+if (!res.ok) {
+            throw new Error(`Server error: ${res.status}`);
+}
+
+        const data = await res.json();
+// Simple markdown-to-HTML conversion for bold and lists
+        let formattedReply = data.reply
+            .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>') // Bold
+            .replace(/^\* (.*$)/gm, '<ul><li>$1</li></ul>') // Lists
+            .replace(/<\/ul>\n<ul>/g, '');
+// Join consecutive lists
+
+        responseBox.innerHTML = formattedReply;
+} catch (err) {
+        console.error("Error contacting chatbot:", err);
+responseBox.innerHTML = "<p class='error'>Sorry, an error occurred while contacting the chatbot.</p>";
+}
+    }
+    
+    // START: New Speech Recognition Logic
+    const voiceBtn = document.getElementById('voiceBtn');
+    const userQ = document.getElementById('userQ');
+
+    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+
+    if (SpeechRecognition) {
+      const recognition = new SpeechRecognition();
+      
+      voiceBtn.addEventListener('click', () => {
+        if (voiceBtn.classList.contains('is-listening')) {
+          recognition.stop();
+        } else {
+          recognition.start();
+        }
+      });
+
+      recognition.onstart = () => {
+        voiceBtn.classList.add('is-listening');
+        voiceBtn.title = "Stop listening";
+      };
+
+      recognition.onend = () => {
+        voiceBtn.classList.remove('is-listening');
+        voiceBtn.title = "Ask with voice";
+      };
+
+      recognition.onresult = (event) => {
+        const currentTranscript = event.results[event.results.length - 1][0].transcript;
+        userQ.value = currentTranscript;
+        // Automatically send the question after speech ends
+        askDoubt();
+      };
+      
+    } else {
+        voiceBtn.style.display = "none";
+        console.log("Speech recognition not supported in this browser.");
+    }
+    // END: New Speech Recognition Logic
+
+
+    // Allow sending question with Enter key
+    document.getElementById('userQ').addEventListener('keypress', function (e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            askDoubt();
+        }
+    });
+</script>
+</body>
+</html>

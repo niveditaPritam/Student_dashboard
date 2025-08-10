@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Student Login</title>
+  <!-- Link to Google Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <!-- Link to your stylesheet -->
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="auth-container">
+    <div class="card">
+      <div class="logo">
+        <!-- You can replace this with your actual logo if you have one -->
+        <img src="https://placehold.co/100x100/5b21b6/ffffff?text=EH" alt="EduHub Logo">
+      </div>
+      <h2>Login to EduHub</h2>
+      <form action="/login" method="POST">
+        <input type="email" name="email" placeholder="Email Address" required />
+        <input type="password" name="password" placeholder="Password" required />
+        <button type="submit">Login</button>
+      </form>
+      <p>New user? <a href="/register">Create an account</a></p>
+    </div>
+  </div>
+</body>
+</html>
