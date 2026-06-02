@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add Subject</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="container" style="max-width:600px;margin:40px auto;padding:20px;background:#fff;border-radius:8px;">
+    <h2>Add Subject</h2>
+    <form action="/subjects" method="POST">
+      <div>
+        <label>Name</label>
+        <input type="text" name="name" required />
+      </div>
+      <div>
+        <label>Description</label>
+        <textarea name="description"></textarea>
+      </div>
+      <div>
+        <label>Notes URL</label>
+        <input type="url" name="notes_url" />
+      </div>
+      <div>
+        <label>Video URL</label>
+        <input type="url" name="video_url" />
+      </div>
+      <div style="margin-top:12px;">
+        <button type="submit" style="background:#5b21b6;color:#fff;padding:8px 12px;border-radius:6px;border:none;">Create</button>
+        <a href="/dashboard" style="margin-left:10px;">Cancel</a>
+      </div>
+    </form>
+  </div>
+</body>
+</html>

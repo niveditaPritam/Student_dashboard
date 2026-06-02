@@ -4,9 +4,13 @@ const express = require("express");
 const session = require("express-session");
 const path = require("path");
 const bcrypt = require("bcryptjs");
-const mysql = require("mysql2");
+const mongoose = require('mongoose');
 const app = express();
-const PORT = 3000;
+const PORT = process.env.PORT || 3000;
+
+// Models
+const User = require('./models/User');
+const Subject = require('./models/Subject');
 
 const cors = require("cors");
 app.use(cors());
@@ -33,18 +37,16 @@ app.post("/ask", async (req, res) => {
 app.use(express.json());
 
 
-// Database connection
-const db = mysql.createConnection({
-  host: "localhost",
-  user: "root",
-  password: "Akash@raj552360",
-  database: "student_portal"
-});
-
-db.connect(err => {
-  if (err) throw err;
-  console.log("MySQL Connected");
-});
+// MongoDB connection
+const MONGO_URI = process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/student_portal';
+mongoose.connect(MONGO_URI, {
+  useNewUrlParser: true,
+  useUnifiedTopology: true
+}).then(() => console.log('MongoDB Connected'))
+  .catch(err => {
+    console.error('MongoDB connection error:', err);
+    process.exit(1);
+  });
 
 // Middleware
 app.use(express.urlencoded({ extended: true }));
@@ -74,35 +76,66 @@ app.get("/register", (req, res) => {
 
 app.post("/register", async (req, res) => {
   const { name, email, password } = req.body;
-  const hashed = await bcrypt.hash(password, 10);
-  db.query("INSERT INTO users (name, email, password) VALUES (?, ?, ?)", [name, email, hashed], err => {
-    if (err) throw err;
+  try {
+    // Prevent duplicate registrations
+    const existing = await User.findOne({ email }).exec();
+    if (existing) return res.status(400).send('Email already registered');
+
+    const hashed = await bcrypt.hash(password, 10);
+    const user = new User({ name, email, password: hashed });
+    await user.save();
     res.redirect("/login");
-  });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error registering user');
+  }
 });
 
 app.get("/login", (req, res) => {
   res.render("login");
 });
 
-app.post("/login", (req, res) => {
+app.post("/login", async (req, res) => {
   const { email, password } = req.body;
-  db.query("SELECT * FROM users WHERE email = ?", [email], async (err, results) => {
-    if (err) throw err;
-    if (results.length > 0 && await bcrypt.compare(password, results[0].password)) {
-      req.session.userId = results[0].id;
+  try {
+    const user = await User.findOne({ email }).exec();
+    if (user && await bcrypt.compare(password, user.password)) {
+      req.session.userId = user._id;
       res.redirect("/dashboard");
     } else {
       res.send("Invalid credentials");
     }
-  });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Login error');
+  }
 });
 
-app.get("/dashboard", isAuthenticated, (req, res) => {
-  db.query("SELECT * FROM subjects", (err, subjects) => {
-    if (err) throw err;
+app.get("/dashboard", isAuthenticated, async (req, res) => {
+  try {
+    const subjects = await Subject.find().exec();
     res.render("dashboard", { subjects });
-  });
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error loading dashboard');
+  }
+});
+
+// Subject creation routes
+app.get('/subjects/new', isAuthenticated, (req, res) => {
+  res.render('add_subject');
+});
+
+app.post('/subjects', isAuthenticated, async (req, res) => {
+  const { name, description, notes_url, video_url } = req.body;
+  try {
+    const s = new Subject({ name, description, notes_url, video_url });
+    await s.save();
+    res.redirect('/dashboard');
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error creating subject');
+  }
 });
 
 app.get("/logout", (req, res) => {

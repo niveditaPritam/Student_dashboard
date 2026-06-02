@@ -97,19 +97,27 @@ a subject to view materials or ask our AI for help.</p>
       <div class="box study-materials">
         <h3><i class="fas fa-folder"></i> Study Materials</h3>
         <label for="subjectSelect">Select Subject:</label>
-        <select id="subjectSelect" onchange="loadSubject(this.value)">
-          <% subjects.forEach(sub => { %>
-            <option value="<%= sub.id %>"><%= sub.title 
-%></option>
-          <% }) %>
-        </select>
+        <div style="display:flex;gap:10px;align-items:center">
+          <select id="subjectSelect" onchange="loadSubject(this.value)">
+            <% subjects.forEach(sub => { %>
+              <option value="<%= sub._id %>"><%= sub.name %></option>
+            <% }) %>
+          </select>
+          <a href="/subjects/new" class="btn" style="padding:8px 12px;background:#5b21b6;color:#fff;border-radius:6px;text-decoration:none;">+ Add Subject</a>
+        </div>
 
         <div id="materialBox">
           <% subjects.forEach(sub => { %>
-            <div class="subject-material" id="subject-<%= sub.id %>" style="display: none;">
-              <a href="<%= sub.notes_url %>" class="material-link" target="_blank"><i class="fas fa-file-alt"></i> View Notes</a>
-              <a href="<%= 
-sub.video_url %>" class="material-link" target="_blank"><i class="fas fa-video"></i> Watch Video</a>
+            <div class="subject-material" id="subject-<%= sub._id %>" style="display: none; flex-direction:column; gap:8px;">
+              <% if (sub.notes_url) { %>
+                <a href="<%= sub.notes_url %>" class="material-link" target="_blank"><i class="fas fa-file-alt"></i> View Notes</a>
+              <% } %>
+              <% if (sub.video_url) { %>
+                <a href="<%= sub.video_url %>" class="material-link" target="_blank"><i class="fas fa-video"></i> Watch Video</a>
+              <% } %>
+              <% if (!sub.notes_url && !sub.video_url) { %>
+                <p>No materials added for this subject yet.</p>
+              <% } %>
             </div>
           <% }) %>
         </div>
